@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ali AlEnezi — Cybersecurity Architect</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #06080c;
+    --surface: #0c1018;
+    --border: #1a2235;
+    --accent: #00e5a0;
+    --accent-dim: #00e5a020;
+    --accent-mid: #00e5a060;
+    --accent-glow: #00e5a0aa;
+    --text: #e8edf5;
+    --text-dim: #6b7a94;
+    --warn: #ff4d6a;
+    --gold: #f0c040;
+    --blue: #4d8cff;
+  }
+  * { margin:0;padding:0;box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body {
+    font-family:'Outfit',sans-serif;
+    background:var(--bg);color:var(--text);
+    overflow-x:hidden;min-height:100vh;
+  }
+
+  /* ══════════════════════════════════════════
+     FULLSCREEN TERMINAL
+     ══════════════════════════════════════════ */
+  #terminal-screen {
+    position:fixed;inset:0;z-index:1000;
+    background:#000;
+    display:flex;flex-direction:column;
+    transition:opacity 1.2s ease, filter 1.2s ease;
+    overflow:hidden;
+  }
+  #terminal-screen.fade-out {
+    opacity:0;
+    filter:brightness(3) blur(10px);
+    pointer-events:none;
+  }
+
+  /* CRT scanlines overlay */
+  #terminal-screen::before {
+    content:'';position:absolute;inset:0;z-index:2;pointer-events:none;
+    background:repeating-linear-gradient(
+      0deg,
+      rgba(0,0,0,0.15) 0px,
+      rgba(0,0,0,0.15) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+  }
+  /* CRT vignette */
+  #terminal-screen::after {
+    content:'';position:absolute;inset:0;z-index:3;pointer-events:none;
+    background:radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.6) 100%);
+  }
+
+  .term-container {
+    flex:1;padding:clamp(16px,4vw,48px);
+    font-family:'JetBrains Mono',monospace;
+    font-size:clamp(11px,1.4vw,15px);
+    line-height:1.65;color:#00e5a0;
+    overflow-y:auto;position:relative;z-index:1;
+  }
+  .term-container::-webkit-scrollbar { width:3px; }
+  .term-container::-webkit-scrollbar-track { background:transparent; }
+  .term-container::-webkit-scrollbar-thumb { background:#0a3; border-radius:2px; }
+
+  .term-line {
+    opacity:0;white-space:pre;
+    transform:translateX(-6px);
+    min-height:1.65em;
+  }
+  .term-line.visible {
+    opacity:1;transform:translateX(0);
+    transition:opacity 0.2s ease, transform 0.2s ease;
+  }
+
+  .t-green { color:#00e5a0; }
+  .t-bright { color:#00ffc0;font-weight:700; }
+  .t-dim { color:#0a5c44; }
+  .t-white { color:#e0e8f0;font-weight:700; }
+  .t-gold { color:#f0c040; }
+  .t-red { color:#ff4d6a; }
+  .t-blue { color:#4d8cff; }
+  .t-gray { color:#334455; }
+  .t-cyan { color:#00d4ff; }
+
+  .cursor {
+    display:inline-block;width:10px;height:1.1em;
+    background:#00e5a0;vertical-align:text-bottom;
+    animation:cursorBlink 0.8s step-end infinite;
+  }
+  @keyframes cursorBlink { 0%,100%{opacity:1}50%{opacity:0} }
+
+  /* ASCII art glow */
+  .ascii-block { text-shadow:0 0 8px rgba(0,229,160,0.4); }
+
+  /* Progress bar */
+  .pbar-track {
+    display:inline-block;width:clamp(120px,20vw,240px);
+    height:10px;background:#0a1a14;border:1px solid #0a3;
+    border-radius:2px;overflow:hidden;vertical-align:middle;
+    margin:0 6px;
+  }
+  .pbar-fill {
+    height:100%;width:0%;background:#00e5a0;
+    border-radius:1px;transition:width 2s ease-out;
+  }
+
+  .skip-btn {
+    position:fixed;bottom:24px;right:24px;z-index:1010;
+    font-family:'JetBrains Mono',monospace;font-size:13px;
+    color:#0a5c44;background:transparent;
+    border:1px solid #0a3;padding:8px 20px;
+    border-radius:4px;cursor:pointer;letter-spacing:2px;
+    transition:all 0.3s ease;
+  }
+  .skip-btn:hover { color:#00e5a0;border-color:#00e5a0;background:rgba(0,229,160,0.05); }
+  .skip-btn.hidden { opacity:0;pointer-events:none; }
+
+  /* ══════════════════════════════════════════
+     MAIN SITE
+     ══════════════════════════════════════════ */
+  #main-site { opacity:0;transition:opacity 1.2s ease 0.2s; }
+  #main-site.visible { opacity:1; }
+
+  .grid-bg { position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none; }
+  .grid-bg::before {
+    content:'';position:absolute;inset:-50%;
+    background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);
+    background-size:60px 60px;opacity:0.25;animation:gridDrift 30s linear infinite;
+  }
+  @keyframes gridDrift { 0%{transform:translate(0,0)}100%{transform:translate(60px,60px)} }
+
+  .orb { position:fixed;border-radius:50%;filter:blur(120px);opacity:0.12;pointer-events:none;z-index:0; }
+  .orb-1 { background:var(--accent);width:500px;height:500px;top:-10%;right:-5%;animation:orbFloat1 12s ease-in-out infinite; }
+  .orb-2 { background:#4060ff;width:500px;height:500px;bottom:-15%;left:-10%;animation:orbFloat2 15s ease-in-out infinite; }
+  @keyframes orbFloat1 { 0%,100%{transform:translate(0,0)}50%{transform:translate(-60px,40px)} }
+  @keyframes orbFloat2 { 0%,100%{transform:translate(0,0)}50%{transform:translate(40px,-50px)} }
+
+  .scanline {
+    position:fixed;top:0;left:0;width:100%;height:3px;
+    background:linear-gradient(90deg,transparent,var(--accent-glow),transparent);
+    z-index:1;animation:scanDown 6s linear infinite;opacity:0.4;pointer-events:none;
+  }
+  @keyframes scanDown { 0%{top:-3px}100%{top:100%} }
+
+  .hud-tl,.hud-tr,.hud-bl,.hud-br { position:fixed;width:60px;height:60px;z-index:3; }
+  .hud-tl { top:20px;left:20px;border-top:2px solid var(--accent);border-left:2px solid var(--accent); }
+  .hud-tr { top:20px;right:20px;border-top:2px solid var(--accent);border-right:2px solid var(--accent); }
+  .hud-bl { bottom:20px;left:20px;border-bottom:2px solid var(--accent);border-left:2px solid var(--accent); }
+  .hud-br { bottom:20px;right:20px;border-bottom:2px solid var(--accent);border-right:2px solid var(--accent); }
+
+  .status-bar {
+    position:fixed;top:28px;left:50%;transform:translateX(-50%);
+    font-family:'JetBrains Mono',monospace;font-size:11px;
+    color:var(--accent);letter-spacing:2px;text-transform:uppercase;
+    z-index:5;display:flex;align-items:center;gap:12px;
+    opacity:0;animation:fadeSlideDown 0.8s ease 0.5s forwards;
+  }
+  .status-dot { width:6px;height:6px;background:var(--accent);border-radius:50%;animation:pulse 2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;box-shadow:0 0 4px var(--accent)}50%{opacity:0.4;box-shadow:0 0 12px var(--accent)} }
+
+  .page {
+    position:relative;z-index:2;min-height:100vh;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding:40px 24px;
+  }
+  .hero { text-align:center;max-width:720px;opacity:0;animation:fadeSlideUp 1s ease 0.3s forwards; }
+  .hero-label {
+    font-family:'JetBrains Mono',monospace;font-size:12px;
+    letter-spacing:4px;text-transform:uppercase;color:var(--accent);
+    margin-bottom:20px;display:flex;align-items:center;justify-content:center;gap:10px;
+  }
+  .hero-label::before,.hero-label::after { content:'';width:40px;height:1px;background:var(--accent);opacity:0.5; }
+
+  .hero-name {
+    font-size:clamp(3rem,8vw,6rem);font-weight:900;line-height:1;
+    letter-spacing:-2px;margin-bottom:8px;
+  }
+  .hero-name .first { color:var(--text); }
+  .hero-name .last { color:var(--accent);position:relative;display:inline-block; }
+  .hero-name .last::after {
+    content:'';position:absolute;bottom:4px;left:0;right:0;height:4px;
+    background:var(--accent);opacity:0.3;border-radius:2px;
+  }
+
+  .hero-title {
+    font-family:'JetBrains Mono',monospace;
+    font-size:clamp(0.85rem,2vw,1.1rem);font-weight:400;
+    color:var(--text-dim);letter-spacing:3px;text-transform:uppercase;
+    margin-top:16px;margin-bottom:32px;
+  }
+  .hero-title .bracket { color:var(--accent);font-weight:700; }
+
+  .glitch { position:relative; }
+  .glitch::before,.glitch::after { content:attr(data-text);position:absolute;top:0;left:0;width:100%;height:100%;opacity:0; }
+  .glitch:hover::before { animation:glitch1 0.3s ease forwards;color:var(--warn);z-index:-1; }
+  .glitch:hover::after { animation:glitch2 0.3s ease forwards;color:#4060ff;z-index:-1; }
+  @keyframes glitch1 { 0%{opacity:0}20%{opacity:0.7;transform:translate(-3px,2px)}40%{opacity:0;transform:translate(3px,-1px)}60%{opacity:0.5;transform:translate(-2px,1px)}80%,100%{opacity:0} }
+  @keyframes glitch2 { 0%,20%{opacity:0}40%{opacity:0.7;transform:translate(2px,-2px)}60%{opacity:0;transform:translate(-3px,1px)}80%{opacity:0.5;transform:translate(1px,-1px)}100%{opacity:0} }
+
+  .certs {
+    display:flex;flex-wrap:wrap;justify-content:center;gap:10px;
+    margin-bottom:48px;opacity:0;animation:fadeSlideUp 1s ease 0.6s forwards;
+  }
+  .cert-badge {
+    font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:500;
+    letter-spacing:1px;padding:6px 14px;border:1px solid var(--border);
+    border-radius:4px;color:var(--text-dim);background:var(--surface);
+    transition:all 0.3s ease;position:relative;overflow:hidden;
+  }
+  .cert-badge::before { content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,var(--accent-dim),transparent);transition:left 0.5s ease; }
+  .cert-badge:hover { border-color:var(--accent);color:var(--accent);box-shadow:0 0 20px var(--accent-dim); }
+  .cert-badge:hover::before { left:100%; }
+
+  .links {
+    display:grid;grid-template-columns:repeat(2,1fr);gap:16px;
+    width:100%;max-width:560px;opacity:0;animation:fadeSlideUp 1s ease 0.9s forwards;
+  }
+  @media (max-width:500px) { .links { grid-template-columns:1fr; } }
+
+  .link-card {
+    position:relative;display:flex;align-items:center;gap:14px;
+    padding:20px;background:var(--surface);border:1px solid var(--border);
+    border-radius:8px;text-decoration:none;color:var(--text);
+    transition:all 0.35s ease;overflow:hidden;
+  }
+  .link-card::before { content:'';position:absolute;inset:0;background:linear-gradient(135deg,var(--accent-dim),transparent 60%);opacity:0;transition:opacity 0.35s ease; }
+  .link-card:hover { border-color:var(--accent-mid);transform:translateY(-3px);box-shadow:0 8px 30px rgba(0,229,160,0.08); }
+  .link-card:hover::before { opacity:1; }
+  .link-icon {
+    position:relative;font-size:22px;width:44px;height:44px;
+    display:flex;align-items:center;justify-content:center;
+    border-radius:8px;background:var(--accent-dim);flex-shrink:0;
+    transition:background 0.35s ease;
+  }
+  .link-card:hover .link-icon { background:var(--accent-mid); }
+  .link-info { position:relative;display:flex;flex-direction:column;gap:2px; }
+  .link-name { font-weight:600;font-size:15px;letter-spacing:0.3px; }
+  .link-desc { font-size:12px;color:var(--text-dim);font-family:'JetBrains Mono',monospace; }
+  .link-arrow { position:relative;margin-left:auto;color:var(--text-dim);font-size:18px;transition:all 0.35s ease;flex-shrink:0; }
+  .link-card:hover .link-arrow { color:var(--accent);transform:translateX(4px); }
+
+  .location {
+    margin-top:48px;display:flex;align-items:center;gap:8px;
+    font-family:'JetBrains Mono',monospace;font-size:12px;
+    color:var(--text-dim);letter-spacing:1px;
+    opacity:0;animation:fadeSlideUp 1s ease 1.2s forwards;
+  }
+
+  .ticker {
+    position:fixed;bottom:28px;left:50%;transform:translateX(-50%);
+    font-family:'JetBrains Mono',monospace;font-size:10px;
+    color:var(--text-dim);letter-spacing:2px;z-index:5;
+    opacity:0;animation:fadeSlideUp 0.8s ease 1.5s forwards;white-space:nowrap;
+  }
+  .ticker span { color:var(--accent); }
+
+  @keyframes fadeSlideUp { from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)} }
+  @keyframes fadeSlideDown { from{opacity:0;transform:translateX(-50%) translateY(-12px)}to{opacity:1;transform:translateX(-50%) translateY(0)} }
+
+  .particles { position:fixed;inset:0;z-index:1;pointer-events:none;overflow:hidden; }
+  .particle { position:absolute;width:2px;height:2px;background:var(--accent);border-radius:50%;opacity:0;animation:particleFloat linear infinite; }
+  @keyframes particleFloat { 0%{opacity:0;transform:translateY(100vh) scale(0)}10%{opacity:0.6}90%{opacity:0.6}100%{opacity:0;transform:translateY(-10vh) scale(1)} }
+</style>
+</head>
+<body>
+
+<!-- ═══════════ FULLSCREEN TERMINAL ═══════════ -->
+<div id="terminal-screen">
+  <div class="term-container" id="term"></div>
+</div>
+<button class="skip-btn" id="skip-btn" onclick="skipTerminal()">[ SKIP ]</button>
+
+<!-- ═══════════ MAIN SITE ═══════════ -->
+<div id="main-site">
+  <div class="grid-bg"></div>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="scanline"></div>
+  <div class="particles" id="particles"></div>
+  <div class="hud-tl"></div><div class="hud-tr"></div><div class="hud-bl"></div><div class="hud-br"></div>
+  <div class="status-bar"><span class="status-dot"></span><span>sys.online</span></div>
+
+  <main class="page">
+    <section class="hero">
+      <div class="hero-label">Security Architect</div>
+      <h1 class="hero-name glitch" data-text="Ali AlEnezi">
+        <span class="first">Ali </span><span class="last">AlEnezi</span>
+      </h1>
+      <p class="hero-title"><span class="bracket">&lt;</span> cybersecurity_architect <span class="bracket">/&gt;</span></p>
+      <div class="certs">
+        <span class="cert-badge">GPEN</span><span class="cert-badge">GWEB</span>
+        <span class="cert-badge">GCCC</span><span class="cert-badge">GICSP</span>
+        <span class="cert-badge">GDSA</span><span class="cert-badge">GISP</span>
+        <span class="cert-badge">ISO 27001 LI</span><span class="cert-badge">MCT</span>
+      </div>
+      <div class="links">
+        <a href="https://github.com/SiteQ8" target="_blank" rel="noopener" class="link-card">
+          <div class="link-icon">💻</div>
+          <div class="link-info"><span class="link-name">GitHub</span><span class="link-desc">tools & research</span></div>
+          <span class="link-arrow">→</span>
+        </a>
+        <a href="https://www.linkedin.com/in/alenizi/" target="_blank" rel="noopener" class="link-card">
+          <div class="link-icon">🔗</div>
+          <div class="link-info"><span class="link-name">LinkedIn</span><span class="link-desc">experience & certs</span></div>
+          <span class="link-arrow">→</span>
+        </a>
+        <a href="https://3li.info/CVAli.pdf" target="_blank" rel="noopener" class="link-card">
+          <div class="link-icon">📄</div>
+          <div class="link-info"><span class="link-name">Resume</span><span class="link-desc">download CV</span></div>
+          <span class="link-arrow">→</span>
+        </a>
+        <a href="mailto:site@hotmail.com" class="link-card">
+          <div class="link-icon">✉️</div>
+          <div class="link-info"><span class="link-name">Contact</span><span class="link-desc">consulting & collab</span></div>
+          <span class="link-arrow">→</span>
+        </a>
+      </div>
+      <div class="location">
+        <span style="font-size:18px">🇰🇼</span>
+        <span>KUWAIT — 2× IT Masters • CMU CISO • 8× GIAC</span>
+      </div>
+    </section>
+  </main>
+  <div class="ticker"><span>&#9608;</span> ALI_ALENEZI <span>//</span> SECURITY_LEADER <span>//</span> DEFEND.DETECT.RESPOND</div>
+</div>
+
+<script>
+const term = document.getElementById('term');
+let skipped = false;
+
+// ── Terminal line definitions ──
+const L = [
+  // BIOS-style boot
+  { t: '<span class="t-dim">ALENEZI SECURITY BIOS v3.1.4 — System Initializing...</span>', d: 500 },
+  { t: '<span class="t-dim">Memory Check: 8192 MB OK</span>', d: 300 },
+  { t: '<span class="t-dim">Crypto Engine: AES-256-GCM .............. </span><span class="t-green">READY</span>', d: 300 },
+  { t: '<span class="t-dim">Firewall Module: ........................ </span><span class="t-green">ACTIVE</span>', d: 200 },
+  { t: '<span class="t-dim">Threat Intel Feed: ...................... </span><span class="t-green">CONNECTED</span>', d: 200 },
+  { t: '', d: 400 },
+
+  // Login
+  { t: '<span class="t-green">login:</span> <span class="t-white">root</span>', d: 500 },
+  { t: '<span class="t-green">password:</span> <span class="t-dim">**************</span>', d: 400 },
+  { t: '<span class="t-green">Access granted.</span> Welcome back, <span class="t-bright">Ali AlEnezi</span>.', d: 600 },
+  { t: '<span class="t-dim">Last login: Sat Mar 07 2026 from 🇰🇼 Kuwait</span>', d: 300 },
+  { t: '', d: 300 },
+
+  // Command
+  { t: '<span class="t-bright">root@alenezi</span><span class="t-dim">:</span><span class="t-blue">~</span><span class="t-dim">$</span> <span class="t-white">cat /etc/arsenal.conf</span>', d: 600 },
+  { t: '', d: 200 },
+
+  // ASCII art
+  { t: '<span class="ascii-block t-bright"> █████╗ ██╗     ███████╗███╗   ██╗███████╗███████╗██╗</span>', d: 80 },
+  { t: '<span class="ascii-block t-bright">██╔══██╗██║     ██╔════╝████╗  ██║██╔════╝╚══███╔╝██║</span>', d: 80 },
+  { t: '<span class="ascii-block t-bright">███████║██║     █████╗  ██╔██╗ ██║█████╗    ███╔╝ ██║</span>', d: 80 },
+  { t: '<span class="ascii-block t-bright">██╔══██║██║     ██╔══╝  ██║╚██╗██║██╔══╝   ███╔╝  ██║</span>', d: 80 },
+  { t: '<span class="ascii-block t-bright">██║  ██║███████╗███████╗██║ ╚████║███████╗███████╗██║</span>', d: 80 },
+  { t: '<span class="ascii-block t-bright">╚═╝  ╚═╝╚══════╝╚══════╝╚═╝  ╚═══╝╚══════╝╚══════╝╚═╝</span>', d: 80 },
+  { t: '', d: 100 },
+  { t: '<span class="t-dim">         ╔═══════════════════════════════════════════╗</span>', d: 60 },
+  { t: '<span class="t-dim">         ║</span>   <span class="t-gold">C Y B E R   A R S E N A L   v 2 . 0</span>   <span class="t-dim">║</span>', d: 60 },
+  { t: '<span class="t-dim">         ║</span>   <span class="t-dim">Securing the world, one commit at a time</span><span class="t-dim">║</span>', d: 60 },
+  { t: '<span class="t-dim">         ╚═══════════════════════════════════════════╝</span>', d: 500 },
+  { t: '', d: 300 },
+
+  // Load repos command
+  { t: '<span class="t-bright">root@alenezi</span><span class="t-dim">:</span><span class="t-blue">~</span><span class="t-dim">$</span> <span class="t-white">arsenal --load-modules github.com/SiteQ8</span>', d: 600 },
+  { t: '', d: 200 },
+  { t: '<span class="t-dim">[*]</span> Scanning repositories .............. <span class="t-bright">88 found</span>', d: 500 },
+  { t: '<span class="t-dim">[*]</span> Classifying by threat domain ........ <span class="t-green">done</span>', d: 400 },
+  { t: '', d: 250 },
+
+  // ─── OFFENSIVE ───
+  { t: '<span class="t-gold">┌─── OFFENSIVE SECURITY ────────────────────────────────────┐</span>', d: 300 },
+  { t: '<span class="t-gold">│</span>', d: 50 },
+  { t: '<span class="t-gold">│</span>  <span class="t-green">●</span> <span class="t-white">VulnScan Framework</span>       <span class="t-dim">Automated pentesting + ML vuln prediction</span>', d: 150 },
+  { t: '<span class="t-gold">│</span>  <span class="t-green">●</span> <span class="t-white">SiteQ8 CyberToolkit</span>      <span class="t-dim">17-file modular bash toolkit, 11 modules</span>', d: 150 },
+  { t: '<span class="t-gold">│</span>  <span class="t-green">●</span> <span class="t-white">AlEnezi Tool (SITE)</span>      <span class="t-dim">CTF toolkit — recon, scanning, exploitation</span>', d: 150 },
+  { t: '<span class="t-gold">│</span>  <span class="t-green">●</span> <span class="t-white">PhishWatch</span>               <span class="t-dim">Real-time phishing via CertStream + OpenSquat</span>', d: 150 },
+  { t: '<span class="t-gold">│</span>', d: 50 },
+  { t: '<span class="t-gold">└──────────────────────────────────────────────────────────┘</span>', d: 200 },
+  { t: '', d: 200 },
+
+  // ─── COMPLIANCE ───
+  { t: '<span class="t-gold">┌─── COMPLIANCE & GOVERNANCE ───────────────────────────────┐</span>', d: 300 },
+  { t: '<span class="t-gold">│</span>', d: 50 },
+  { t: '<span class="t-gold">│</span>  <span class="t-green">●</span> <span class="t-white">CBK CORF Compliance</span>      <span class="t-dim">Kuwait Central Bank framework — 876 controls</span>', d: 150 },
+  { t: '<span class="t-gold">│</span>  <span class="t-green">●</span> <span class="t-white">CIS Audit Tool</span>           <span class="t-dim">CIS Controls v8.1 audit + progress tracker</span>', d: 150 },
+  { t: '<span class="t-gold">│</span>  <span class="t-green">●</span> <span class="t-white">CIS Controls Platform</span>    <span class="t-dim">Interactive learning for all 18 CIS controls</span>', d: 150 },
+  { t: '<span class="t-gold">│</span>  <span class="t-green">●</span> <span class="t-white">CIS Benchmark Checker</span>    <span class="t-dim">Automated benchmark compliance checks</span>', d: 150 },
+  { t: '<span class="t-gold">│</span>  <span class="t-green">●</span> <span class="t-white">Arabic InfoSec Policies</span>  <span class="t-dim">Arabic security policy templates (2025)</span>', d: 150 },
+  { t: '<span class="t-gold">│</span>', d: 50 },
+  { t: '<span class="t-gold">└──────────────────────────────────────────────────────────┘</span>', d: 200 },
+  { t: '', d: 200 },
+
+  // ─── ICS ───
+  { t: '<span class="t-gold">┌─── ICS / IoT / OT SECURITY ───────────────────────────────┐</span>', d: 300 },
+  { t: '<span class="t-gold">│</span>', d: 50 },
+  { t: '<span class="t-gold">│</span>  <span class="t-green">●</span> <span class="t-white">ICS/IoT/OT Hardening</span>     <span class="t-dim">IEC 62443 · NIST 800-82 · NERC CIP · MITRE</span>', d: 150 },
+  { t: '<span class="t-gold">│</span>  <span class="t-green">●</span> <span class="t-white">Shodan IoT Discovery</span>     <span class="t-dim">IoT/CCTV exposure recon via Shodan API</span>', d: 150 },
+  { t: '<span class="t-gold">│</span>', d: 50 },
+  { t: '<span class="t-gold">└──────────────────────────────────────────────────────────┘</span>', d: 200 },
+  { t: '', d: 200 },
+
+  // ─── STRATEGY ───
+  { t: '<span class="t-gold">┌─── STRATEGY & ARCHITECTURE ───────────────────────────────┐</span>', d: 300 },
+  { t: '<span class="t-gold">│</span>', d: 50 },
+  { t: '<span class="t-gold">│</span>  <span class="t-green">●</span> <span class="t-white">CyberStrategy Workbench</span>  <span class="t-dim">90-day plans · SWOT · stakeholder · policies</span>', d: 150 },
+  { t: '<span class="t-gold">│</span>  <span class="t-green">●</span> <span class="t-white">Zero Trust Architecture</span>  <span class="t-dim">ZTA implementation for banking environments</span>', d: 150 },
+  { t: '<span class="t-gold">│</span>  <span class="t-green">●</span> <span class="t-white">CyberArsenal Catalog</span>    <span class="t-dim">60+ open-source tools across 12 categories</span>', d: 150 },
+  { t: '<span class="t-gold">│</span>', d: 50 },
+  { t: '<span class="t-gold">└──────────────────────────────────────────────────────────┘</span>', d: 200 },
+  { t: '', d: 200 },
+
+  // ─── RESEARCH ───
+  { t: '<span class="t-gold">┌─── RESEARCH & COMMUNITY ──────────────────────────────────┐</span>', d: 300 },
+  { t: '<span class="t-gold">│</span>', d: 50 },
+  { t: '<span class="t-gold">│</span>  <span class="t-green">●</span> <span class="t-white">KWT Cyber Landscape</span>      <span class="t-dim">Kuwait cybersec professionals & cert analysis</span>', d: 150 },
+  { t: '<span class="t-gold">│</span>  <span class="t-green">●</span> <span class="t-white">KWTCyberWatch</span>            <span class="t-dim">National threat monitoring & intelligence</span>', d: 150 },
+  { t: '<span class="t-gold">│</span>', d: 50 },
+  { t: '<span class="t-gold">└──────────────────────────────────────────────────────────┘</span>', d: 200 },
+  { t: '', d: 400 },
+
+  // System summary
+  { t: '<span class="t-dim">[*]</span> All modules verified and loaded.', d: 300 },
+  { t: '', d: 200 },
+  { t: '<span class="t-dim">    STACK</span>   <span class="t-cyan">Python</span> · <span class="t-cyan">Bash</span> · <span class="t-cyan">KQL</span> · <span class="t-cyan">PowerShell</span> · <span class="t-cyan">React</span> · <span class="t-cyan">Terraform</span>', d: 200 },
+  { t: '<span class="t-dim">    CLOUD</span>   <span class="t-cyan">Azure</span> · <span class="t-cyan">AWS</span> · <span class="t-cyan">GCP</span> · <span class="t-cyan">Docker</span> · <span class="t-cyan">Kubernetes</span>', d: 200 },
+  { t: '<span class="t-dim">    CERTS</span>   <span class="t-cyan">GPEN</span> · <span class="t-cyan">GWEB</span> · <span class="t-cyan">GCCC</span> · <span class="t-cyan">GICSP</span> · <span class="t-cyan">GDSA</span> · <span class="t-cyan">GISP</span> · <span class="t-cyan">ISO27001</span> · <span class="t-cyan">MCT</span>', d: 200 },
+  { t: '', d: 400 },
+
+  // Launch
+  { t: '<span class="t-bright">root@alenezi</span><span class="t-dim">:</span><span class="t-blue">~</span><span class="t-dim">$</span> <span class="t-white">launch --secure-interface</span>', d: 700 },
+  { t: '', d: 300 },
+  { t: '<span class="t-bright">▸ ENTERING SECURE INTERFACE...</span><span class="cursor"></span>', d: 1500, last: true },
+];
+
+function addLine(html) {
+  const el = document.createElement('div');
+  el.className = 'term-line';
+  el.innerHTML = html;
+  term.appendChild(el);
+  requestAnimationFrame(() => {
+    el.classList.add('visible');
+    term.scrollTop = term.scrollHeight;
+  });
+}
+
+function run(i) {
+  if (skipped || i >= L.length) return;
+  addLine(L[i].t);
+  if (L[i].last) { setTimeout(() => { if (!skipped) go(); }, L[i].d); return; }
+  setTimeout(() => run(i+1), L[i].d);
+}
+
+function go() {
+  skipped = true;
+  document.getElementById('skip-btn').classList.add('hidden');
+  document.getElementById('terminal-screen').classList.add('fade-out');
+  setTimeout(() => {
+    document.getElementById('terminal-screen').style.display = 'none';
+    document.getElementById('main-site').classList.add('visible');
+  }, 1200);
+}
+
+function skipTerminal() { if (!skipped) go(); }
+
+// Start after brief blackout
+setTimeout(() => run(0), 800);
+
+// Particles
+const pc = document.getElementById('particles');
+for (let i=0;i<30;i++) {
+  const p = document.createElement('div');
+  p.className='particle';
+  p.style.left=Math.random()*100+'%';
+  p.style.animationDuration=(8+Math.random()*14)+'s';
+  p.style.animationDelay=(Math.random()*10)+'s';
+  p.style.width=p.style.height=(1+Math.random()*2)+'px';
+  pc.appendChild(p);
+}
+
+document.addEventListener('mousemove',e=>{
+  const x=(e.clientX/innerWidth-0.5)*10, y=(e.clientY/innerHeight-0.5)*10;
+  document.querySelector('.orb-1').style.transform=`translate(${-x}px,${-y}px)`;
+  document.querySelector('.orb-2').style.transform=`translate(${x}px,${y}px)`;
+});
+
+document.addEventListener('keydown',e=>{
+  if((e.key==='Enter'||e.key==='Escape'||e.key===' ')&&!skipped) skipTerminal();
+});
+</script>
+</body>
+</html>
