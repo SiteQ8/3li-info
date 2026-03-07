@@ -2,8 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Ali AlEnezi — Cybersecurity Architect</title>
+<meta name="description" content="Ali AlEnezi — Cybersecurity Architect, Security Leader, 8x GIAC, MCT, Kuwait">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -22,11 +23,12 @@
     --blue: #4d8cff;
   }
   * { margin:0;padding:0;box-sizing:border-box; }
-  html { scroll-behavior:smooth; }
+  html { scroll-behavior:smooth; -webkit-text-size-adjust:100%; }
   body {
     font-family:'Outfit',sans-serif;
     background:var(--bg);color:var(--text);
     overflow-x:hidden;min-height:100vh;
+    min-height:100dvh;
   }
 
   /* ══════════════════════════════════════════
@@ -45,38 +47,32 @@
     pointer-events:none;
   }
 
-  /* CRT scanlines overlay */
   #terminal-screen::before {
     content:'';position:absolute;inset:0;z-index:2;pointer-events:none;
-    background:repeating-linear-gradient(
-      0deg,
-      rgba(0,0,0,0.15) 0px,
-      rgba(0,0,0,0.15) 1px,
-      transparent 1px,
-      transparent 3px
-    );
+    background:repeating-linear-gradient(0deg,
+      rgba(0,0,0,0.15) 0px, rgba(0,0,0,0.15) 1px,
+      transparent 1px, transparent 3px);
   }
-  /* CRT vignette */
   #terminal-screen::after {
     content:'';position:absolute;inset:0;z-index:3;pointer-events:none;
     background:radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.6) 100%);
   }
 
   .term-container {
-    flex:1;padding:clamp(16px,4vw,48px);
+    flex:1;padding:16px;
     font-family:'JetBrains Mono',monospace;
-    font-size:clamp(11px,1.4vw,15px);
-    line-height:1.65;color:#00e5a0;
-    overflow-y:auto;position:relative;z-index:1;
+    font-size:13px;line-height:1.65;color:#00e5a0;
+    overflow-y:auto;overflow-x:hidden;
+    position:relative;z-index:1;
+    -webkit-overflow-scrolling:touch;
   }
   .term-container::-webkit-scrollbar { width:3px; }
   .term-container::-webkit-scrollbar-track { background:transparent; }
-  .term-container::-webkit-scrollbar-thumb { background:#0a3; border-radius:2px; }
+  .term-container::-webkit-scrollbar-thumb { background:#0a3;border-radius:2px; }
 
   .term-line {
-    opacity:0;white-space:pre;
-    transform:translateX(-6px);
-    min-height:1.65em;
+    opacity:0;white-space:pre-wrap;word-break:break-word;
+    transform:translateX(-6px);min-height:1.65em;
   }
   .term-line.visible {
     opacity:1;transform:translateX(0);
@@ -100,31 +96,30 @@
   }
   @keyframes cursorBlink { 0%,100%{opacity:1}50%{opacity:0} }
 
-  /* ASCII art glow */
   .ascii-block { text-shadow:0 0 8px rgba(0,229,160,0.4); }
-
-  /* Progress bar */
-  .pbar-track {
-    display:inline-block;width:clamp(120px,20vw,240px);
-    height:10px;background:#0a1a14;border:1px solid #0a3;
-    border-radius:2px;overflow:hidden;vertical-align:middle;
-    margin:0 6px;
-  }
-  .pbar-fill {
-    height:100%;width:0%;background:#00e5a0;
-    border-radius:1px;transition:width 2s ease-out;
-  }
 
   .skip-btn {
     position:fixed;bottom:24px;right:24px;z-index:1010;
     font-family:'JetBrains Mono',monospace;font-size:13px;
-    color:#0a5c44;background:transparent;
-    border:1px solid #0a3;padding:8px 20px;
+    color:#0a5c44;background:rgba(0,0,0,0.6);
+    border:1px solid #0a3;padding:10px 22px;
     border-radius:4px;cursor:pointer;letter-spacing:2px;
     transition:all 0.3s ease;
+    -webkit-tap-highlight-color:transparent;
+    touch-action:manipulation;
   }
-  .skip-btn:hover { color:#00e5a0;border-color:#00e5a0;background:rgba(0,229,160,0.05); }
+  .skip-btn:hover,.skip-btn:active { color:#00e5a0;border-color:#00e5a0;background:rgba(0,229,160,0.08); }
   .skip-btn.hidden { opacity:0;pointer-events:none; }
+
+  /* Tap anywhere hint on mobile */
+  .tap-hint {
+    position:fixed;bottom:72px;left:50%;transform:translateX(-50%);
+    z-index:1010;font-family:'JetBrains Mono',monospace;
+    font-size:11px;color:#0a5c44;letter-spacing:1px;
+    animation:tapPulse 2s ease-in-out infinite;
+    display:none;
+  }
+  @keyframes tapPulse { 0%,100%{opacity:0.4}50%{opacity:0.8} }
 
   /* ══════════════════════════════════════════
      MAIN SITE
@@ -153,51 +148,51 @@
   }
   @keyframes scanDown { 0%{top:-3px}100%{top:100%} }
 
-  .hud-tl,.hud-tr,.hud-bl,.hud-br { position:fixed;width:60px;height:60px;z-index:3; }
-  .hud-tl { top:20px;left:20px;border-top:2px solid var(--accent);border-left:2px solid var(--accent); }
-  .hud-tr { top:20px;right:20px;border-top:2px solid var(--accent);border-right:2px solid var(--accent); }
-  .hud-bl { bottom:20px;left:20px;border-bottom:2px solid var(--accent);border-left:2px solid var(--accent); }
-  .hud-br { bottom:20px;right:20px;border-bottom:2px solid var(--accent);border-right:2px solid var(--accent); }
+  .hud-tl,.hud-tr,.hud-bl,.hud-br { position:fixed;width:40px;height:40px;z-index:3; }
+  .hud-tl { top:12px;left:12px;border-top:2px solid var(--accent);border-left:2px solid var(--accent); }
+  .hud-tr { top:12px;right:12px;border-top:2px solid var(--accent);border-right:2px solid var(--accent); }
+  .hud-bl { bottom:12px;left:12px;border-bottom:2px solid var(--accent);border-left:2px solid var(--accent); }
+  .hud-br { bottom:12px;right:12px;border-bottom:2px solid var(--accent);border-right:2px solid var(--accent); }
 
   .status-bar {
-    position:fixed;top:28px;left:50%;transform:translateX(-50%);
-    font-family:'JetBrains Mono',monospace;font-size:11px;
+    position:fixed;top:18px;left:50%;transform:translateX(-50%);
+    font-family:'JetBrains Mono',monospace;font-size:10px;
     color:var(--accent);letter-spacing:2px;text-transform:uppercase;
-    z-index:5;display:flex;align-items:center;gap:12px;
+    z-index:5;display:flex;align-items:center;gap:8px;
     opacity:0;animation:fadeSlideDown 0.8s ease 0.5s forwards;
   }
   .status-dot { width:6px;height:6px;background:var(--accent);border-radius:50%;animation:pulse 2s ease-in-out infinite; }
   @keyframes pulse { 0%,100%{opacity:1;box-shadow:0 0 4px var(--accent)}50%{opacity:0.4;box-shadow:0 0 12px var(--accent)} }
 
   .page {
-    position:relative;z-index:2;min-height:100vh;
+    position:relative;z-index:2;min-height:100vh;min-height:100dvh;
     display:flex;flex-direction:column;align-items:center;justify-content:center;
-    padding:40px 24px;
+    padding:60px 20px 80px;
   }
-  .hero { text-align:center;max-width:720px;opacity:0;animation:fadeSlideUp 1s ease 0.3s forwards; }
+  .hero { text-align:center;max-width:720px;width:100%;opacity:0;animation:fadeSlideUp 1s ease 0.3s forwards; }
   .hero-label {
-    font-family:'JetBrains Mono',monospace;font-size:12px;
-    letter-spacing:4px;text-transform:uppercase;color:var(--accent);
-    margin-bottom:20px;display:flex;align-items:center;justify-content:center;gap:10px;
+    font-family:'JetBrains Mono',monospace;font-size:11px;
+    letter-spacing:3px;text-transform:uppercase;color:var(--accent);
+    margin-bottom:16px;display:flex;align-items:center;justify-content:center;gap:8px;
   }
-  .hero-label::before,.hero-label::after { content:'';width:40px;height:1px;background:var(--accent);opacity:0.5; }
+  .hero-label::before,.hero-label::after { content:'';width:30px;height:1px;background:var(--accent);opacity:0.5; }
 
   .hero-name {
-    font-size:clamp(3rem,8vw,6rem);font-weight:900;line-height:1;
-    letter-spacing:-2px;margin-bottom:8px;
+    font-size:clamp(2.4rem,10vw,6rem);font-weight:900;line-height:1;
+    letter-spacing:-1px;margin-bottom:8px;
   }
   .hero-name .first { color:var(--text); }
   .hero-name .last { color:var(--accent);position:relative;display:inline-block; }
   .hero-name .last::after {
-    content:'';position:absolute;bottom:4px;left:0;right:0;height:4px;
+    content:'';position:absolute;bottom:2px;left:0;right:0;height:3px;
     background:var(--accent);opacity:0.3;border-radius:2px;
   }
 
   .hero-title {
     font-family:'JetBrains Mono',monospace;
-    font-size:clamp(0.85rem,2vw,1.1rem);font-weight:400;
-    color:var(--text-dim);letter-spacing:3px;text-transform:uppercase;
-    margin-top:16px;margin-bottom:32px;
+    font-size:clamp(0.7rem,2.5vw,1.1rem);font-weight:400;
+    color:var(--text-dim);letter-spacing:2px;text-transform:uppercase;
+    margin-top:12px;margin-bottom:28px;
   }
   .hero-title .bracket { color:var(--accent);font-weight:700; }
 
@@ -209,12 +204,12 @@
   @keyframes glitch2 { 0%,20%{opacity:0}40%{opacity:0.7;transform:translate(2px,-2px)}60%{opacity:0;transform:translate(-3px,1px)}80%{opacity:0.5;transform:translate(1px,-1px)}100%{opacity:0} }
 
   .certs {
-    display:flex;flex-wrap:wrap;justify-content:center;gap:10px;
-    margin-bottom:48px;opacity:0;animation:fadeSlideUp 1s ease 0.6s forwards;
+    display:flex;flex-wrap:wrap;justify-content:center;gap:8px;
+    margin-bottom:36px;opacity:0;animation:fadeSlideUp 1s ease 0.6s forwards;
   }
   .cert-badge {
-    font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:500;
-    letter-spacing:1px;padding:6px 14px;border:1px solid var(--border);
+    font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500;
+    letter-spacing:1px;padding:5px 12px;border:1px solid var(--border);
     border-radius:4px;color:var(--text-dim);background:var(--surface);
     transition:all 0.3s ease;position:relative;overflow:hidden;
   }
@@ -223,43 +218,44 @@
   .cert-badge:hover::before { left:100%; }
 
   .links {
-    display:grid;grid-template-columns:repeat(2,1fr);gap:16px;
+    display:grid;grid-template-columns:repeat(2,1fr);gap:12px;
     width:100%;max-width:560px;opacity:0;animation:fadeSlideUp 1s ease 0.9s forwards;
   }
-  @media (max-width:500px) { .links { grid-template-columns:1fr; } }
 
   .link-card {
-    position:relative;display:flex;align-items:center;gap:14px;
-    padding:20px;background:var(--surface);border:1px solid var(--border);
+    position:relative;display:flex;align-items:center;gap:12px;
+    padding:16px;background:var(--surface);border:1px solid var(--border);
     border-radius:8px;text-decoration:none;color:var(--text);
     transition:all 0.35s ease;overflow:hidden;
+    -webkit-tap-highlight-color:transparent;
   }
   .link-card::before { content:'';position:absolute;inset:0;background:linear-gradient(135deg,var(--accent-dim),transparent 60%);opacity:0;transition:opacity 0.35s ease; }
-  .link-card:hover { border-color:var(--accent-mid);transform:translateY(-3px);box-shadow:0 8px 30px rgba(0,229,160,0.08); }
-  .link-card:hover::before { opacity:1; }
+  .link-card:hover,.link-card:active { border-color:var(--accent-mid);transform:translateY(-2px);box-shadow:0 8px 30px rgba(0,229,160,0.08); }
+  .link-card:hover::before,.link-card:active::before { opacity:1; }
   .link-icon {
-    position:relative;font-size:22px;width:44px;height:44px;
+    position:relative;font-size:20px;width:40px;height:40px;
     display:flex;align-items:center;justify-content:center;
     border-radius:8px;background:var(--accent-dim);flex-shrink:0;
     transition:background 0.35s ease;
   }
-  .link-card:hover .link-icon { background:var(--accent-mid); }
-  .link-info { position:relative;display:flex;flex-direction:column;gap:2px; }
-  .link-name { font-weight:600;font-size:15px;letter-spacing:0.3px; }
-  .link-desc { font-size:12px;color:var(--text-dim);font-family:'JetBrains Mono',monospace; }
-  .link-arrow { position:relative;margin-left:auto;color:var(--text-dim);font-size:18px;transition:all 0.35s ease;flex-shrink:0; }
+  .link-card:hover .link-icon,.link-card:active .link-icon { background:var(--accent-mid); }
+  .link-info { position:relative;display:flex;flex-direction:column;gap:1px;min-width:0; }
+  .link-name { font-weight:600;font-size:14px;letter-spacing:0.3px; }
+  .link-desc { font-size:11px;color:var(--text-dim);font-family:'JetBrains Mono',monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+  .link-arrow { position:relative;margin-left:auto;color:var(--text-dim);font-size:16px;transition:all 0.35s ease;flex-shrink:0; }
   .link-card:hover .link-arrow { color:var(--accent);transform:translateX(4px); }
 
   .location {
-    margin-top:48px;display:flex;align-items:center;gap:8px;
-    font-family:'JetBrains Mono',monospace;font-size:12px;
+    margin-top:36px;display:flex;align-items:center;gap:8px;
+    font-family:'JetBrains Mono',monospace;font-size:11px;
     color:var(--text-dim);letter-spacing:1px;
     opacity:0;animation:fadeSlideUp 1s ease 1.2s forwards;
+    text-align:center;flex-wrap:wrap;justify-content:center;
   }
 
   .ticker {
-    position:fixed;bottom:28px;left:50%;transform:translateX(-50%);
-    font-family:'JetBrains Mono',monospace;font-size:10px;
+    position:fixed;bottom:16px;left:50%;transform:translateX(-50%);
+    font-family:'JetBrains Mono',monospace;font-size:9px;
     color:var(--text-dim);letter-spacing:2px;z-index:5;
     opacity:0;animation:fadeSlideUp 0.8s ease 1.5s forwards;white-space:nowrap;
   }
@@ -271,6 +267,52 @@
   .particles { position:fixed;inset:0;z-index:1;pointer-events:none;overflow:hidden; }
   .particle { position:absolute;width:2px;height:2px;background:var(--accent);border-radius:50%;opacity:0;animation:particleFloat linear infinite; }
   @keyframes particleFloat { 0%{opacity:0;transform:translateY(100vh) scale(0)}10%{opacity:0.6}90%{opacity:0.6}100%{opacity:0;transform:translateY(-10vh) scale(1)} }
+
+  /* ══════════════════════════════════════════
+     MOBILE BREAKPOINTS
+     ══════════════════════════════════════════ */
+  @media (max-width:600px) {
+    .term-container { font-size:10px;padding:12px;line-height:1.55; }
+    .skip-btn { bottom:16px;right:16px;font-size:12px;padding:12px 20px; }
+    .tap-hint { display:block; }
+    .links { grid-template-columns:1fr; }
+    .link-card { padding:14px; }
+    .page { padding:50px 16px 70px; }
+    .hud-tl,.hud-tr,.hud-bl,.hud-br { width:28px;height:28px; }
+    .hud-tl { top:8px;left:8px; }
+    .hud-tr { top:8px;right:8px; }
+    .hud-bl { bottom:8px;left:8px; }
+    .hud-br { bottom:8px;right:8px; }
+    .status-bar { font-size:9px;top:14px;letter-spacing:1px; }
+    .hero-label { font-size:10px;letter-spacing:2px; }
+    .hero-label::before,.hero-label::after { width:20px; }
+    .hero-title { letter-spacing:1px; }
+    .certs { gap:6px; }
+    .cert-badge { font-size:9px;padding:4px 8px; }
+    .location { font-size:10px; }
+    .ticker { font-size:8px;letter-spacing:1px; }
+    .orb-1,.orb-2 { width:300px;height:300px; }
+  }
+
+  @media (max-width:380px) {
+    .term-container { font-size:9px; }
+    .hero-name { font-size:2rem; }
+  }
+
+  /* ══════════════════════════════════════════
+     DESKTOP ENHANCEMENTS
+     ══════════════════════════════════════════ */
+  @media (min-width:601px) {
+    .term-container { padding:clamp(20px,4vw,48px);font-size:clamp(12px,1.3vw,15px); }
+    .hud-tl,.hud-tr,.hud-bl,.hud-br { width:60px;height:60px; }
+    .hud-tl { top:20px;left:20px; }
+    .hud-tr { top:20px;right:20px; }
+    .hud-bl { bottom:20px;left:20px; }
+    .hud-br { bottom:20px;right:20px; }
+    .status-bar { font-size:11px;top:28px; }
+    .page { padding:40px 24px; }
+    .ticker { font-size:10px;bottom:28px; }
+  }
 </style>
 </head>
 <body>
@@ -279,6 +321,7 @@
 <div id="terminal-screen">
   <div class="term-container" id="term"></div>
 </div>
+<div class="tap-hint">tap anywhere to skip</div>
 <button class="skip-btn" id="skip-btn" onclick="skipTerminal()">[ SKIP ]</button>
 
 <!-- ═══════════ MAIN SITE ═══════════ -->
@@ -338,113 +381,149 @@
 <script>
 const term = document.getElementById('term');
 let skipped = false;
+const isMobile = window.innerWidth <= 600;
 
-// ── Terminal line definitions ──
-const L = [
-  // BIOS-style boot
-  { t: '<span class="t-dim">ALENEZI SECURITY BIOS v3.1.4 — System Initializing...</span>', d: 500 },
-  { t: '<span class="t-dim">Memory Check: 8192 MB OK</span>', d: 300 },
-  { t: '<span class="t-dim">Crypto Engine: AES-256-GCM .............. </span><span class="t-green">READY</span>', d: 300 },
-  { t: '<span class="t-dim">Firewall Module: ........................ </span><span class="t-green">ACTIVE</span>', d: 200 },
-  { t: '<span class="t-dim">Threat Intel Feed: ...................... </span><span class="t-green">CONNECTED</span>', d: 200 },
-  { t: '', d: 400 },
+// ── Build terminal lines based on screen size ──
+function buildLines() {
+  const base = [
+    { t: '<span class="t-dim">ALENEZI SECURITY BIOS v3.1.4 — System Initializing...</span>', d: 500 },
+    { t: '<span class="t-dim">Memory Check: 8192 MB OK</span>', d: 300 },
+    { t: '<span class="t-dim">Crypto Engine: AES-256-GCM ... </span><span class="t-green">READY</span>', d: 300 },
+    { t: '<span class="t-dim">Firewall Module: ............ </span><span class="t-green">ACTIVE</span>', d: 200 },
+    { t: '<span class="t-dim">Threat Intel Feed: .......... </span><span class="t-green">CONNECTED</span>', d: 200 },
+    { t: '', d: 400 },
+    { t: '<span class="t-green">login:</span> <span class="t-white">root</span>', d: 500 },
+    { t: '<span class="t-green">password:</span> <span class="t-dim">**************</span>', d: 400 },
+    { t: '<span class="t-green">Access granted.</span> Welcome back, <span class="t-bright">Ali AlEnezi</span>.', d: 600 },
+    { t: '<span class="t-dim">Last login: Sat Mar 07 2026 from 🇰🇼 Kuwait</span>', d: 300 },
+    { t: '', d: 300 },
+    { t: '<span class="t-bright">root@alenezi</span><span class="t-dim">:</span><span class="t-blue">~</span><span class="t-dim">$</span> <span class="t-white">cat /etc/arsenal.conf</span>', d: 600 },
+    { t: '', d: 200 },
+  ];
 
-  // Login
-  { t: '<span class="t-green">login:</span> <span class="t-white">root</span>', d: 500 },
-  { t: '<span class="t-green">password:</span> <span class="t-dim">**************</span>', d: 400 },
-  { t: '<span class="t-green">Access granted.</span> Welcome back, <span class="t-bright">Ali AlEnezi</span>.', d: 600 },
-  { t: '<span class="t-dim">Last login: Sat Mar 07 2026 from 🇰🇼 Kuwait</span>', d: 300 },
-  { t: '', d: 300 },
+  // ASCII art — smaller version for mobile
+  const asciiDesktop = [
+    { t: '<span class="ascii-block t-bright"> █████╗ ██╗     ███████╗███╗   ██╗███████╗███████╗██╗</span>', d: 80 },
+    { t: '<span class="ascii-block t-bright">██╔══██╗██║     ██╔════╝████╗  ██║██╔════╝╚══███╔╝██║</span>', d: 80 },
+    { t: '<span class="ascii-block t-bright">███████║██║     █████╗  ██╔██╗ ██║█████╗    ███╔╝ ██║</span>', d: 80 },
+    { t: '<span class="ascii-block t-bright">██╔══██║██║     ██╔══╝  ██║╚██╗██║██╔══╝   ███╔╝  ██║</span>', d: 80 },
+    { t: '<span class="ascii-block t-bright">██║  ██║███████╗███████╗██║ ╚████║███████╗███████╗██║</span>', d: 80 },
+    { t: '<span class="ascii-block t-bright">╚═╝  ╚═╝╚══════╝╚══════╝╚═╝  ╚═══╝╚══════╝╚══════╝╚═╝</span>', d: 80 },
+  ];
 
-  // Command
-  { t: '<span class="t-bright">root@alenezi</span><span class="t-dim">:</span><span class="t-blue">~</span><span class="t-dim">$</span> <span class="t-white">cat /etc/arsenal.conf</span>', d: 600 },
-  { t: '', d: 200 },
+  const asciiMobile = [
+    { t: '<span class="ascii-block t-bright"> █████╗ ██╗     ██╗</span>', d: 80 },
+    { t: '<span class="ascii-block t-bright">██╔══██╗██║     ██║</span>', d: 80 },
+    { t: '<span class="ascii-block t-bright">███████║██║     ██║</span>', d: 80 },
+    { t: '<span class="ascii-block t-bright">██╔══██║██║     ██║</span>', d: 80 },
+    { t: '<span class="ascii-block t-bright">██║  ██║███████╗██║</span>', d: 80 },
+    { t: '<span class="ascii-block t-bright">╚═╝  ╚═╝╚══════╝╚═╝</span>', d: 80 },
+    { t: '', d: 60 },
+    { t: '<span class="t-bright" style="font-size:1.2em;letter-spacing:3px">  ALENEZI</span>', d: 100 },
+  ];
 
-  // ASCII art
-  { t: '<span class="ascii-block t-bright"> █████╗ ██╗     ███████╗███╗   ██╗███████╗███████╗██╗</span>', d: 80 },
-  { t: '<span class="ascii-block t-bright">██╔══██╗██║     ██╔════╝████╗  ██║██╔════╝╚══███╔╝██║</span>', d: 80 },
-  { t: '<span class="ascii-block t-bright">███████║██║     █████╗  ██╔██╗ ██║█████╗    ███╔╝ ██║</span>', d: 80 },
-  { t: '<span class="ascii-block t-bright">██╔══██║██║     ██╔══╝  ██║╚██╗██║██╔══╝   ███╔╝  ██║</span>', d: 80 },
-  { t: '<span class="ascii-block t-bright">██║  ██║███████╗███████╗██║ ╚████║███████╗███████╗██║</span>', d: 80 },
-  { t: '<span class="ascii-block t-bright">╚═╝  ╚═╝╚══════╝╚══════╝╚═╝  ╚═══╝╚══════╝╚══════╝╚═╝</span>', d: 80 },
-  { t: '', d: 100 },
-  { t: '<span class="t-dim">         ╔═══════════════════════════════════════════╗</span>', d: 60 },
-  { t: '<span class="t-dim">         ║</span>   <span class="t-gold">C Y B E R   A R S E N A L   v 2 . 0</span>   <span class="t-dim">║</span>', d: 60 },
-  { t: '<span class="t-dim">         ║</span>   <span class="t-dim">Securing the world, one commit at a time</span><span class="t-dim">║</span>', d: 60 },
-  { t: '<span class="t-dim">         ╚═══════════════════════════════════════════╝</span>', d: 500 },
-  { t: '', d: 300 },
+  const ascii = isMobile ? asciiMobile : asciiDesktop;
 
-  // Load repos command
-  { t: '<span class="t-bright">root@alenezi</span><span class="t-dim">:</span><span class="t-blue">~</span><span class="t-dim">$</span> <span class="t-white">arsenal --load-modules github.com/SiteQ8</span>', d: 600 },
-  { t: '', d: 200 },
-  { t: '<span class="t-dim">[*]</span> Scanning repositories .............. <span class="t-bright">88 found</span>', d: 500 },
-  { t: '<span class="t-dim">[*]</span> Classifying by threat domain ........ <span class="t-green">done</span>', d: 400 },
-  { t: '', d: 250 },
+  const banner = isMobile ? [
+    { t: '', d: 100 },
+    { t: '<span class="t-gold">  CYBER ARSENAL v2.0</span>', d: 100 },
+    { t: '<span class="t-dim">  Securing the world,</span>', d: 60 },
+    { t: '<span class="t-dim">  one commit at a time</span>', d: 300 },
+  ] : [
+    { t: '', d: 100 },
+    { t: '<span class="t-dim">         ╔═══════════════════════════════════════════╗</span>', d: 60 },
+    { t: '<span class="t-dim">         ║</span>   <span class="t-gold">C Y B E R   A R S E N A L   v 2 . 0</span>   <span class="t-dim">║</span>', d: 60 },
+    { t: '<span class="t-dim">         ║</span>   <span class="t-dim">Securing the world, one commit at a time</span><span class="t-dim">║</span>', d: 60 },
+    { t: '<span class="t-dim">         ╚═══════════════════════════════════════════╝</span>', d: 300 },
+  ];
 
-  // ─── OFFENSIVE ───
-  { t: '<span class="t-gold">┌─── OFFENSIVE SECURITY ────────────────────────────────────┐</span>', d: 300 },
-  { t: '<span class="t-gold">│</span>', d: 50 },
-  { t: '<span class="t-gold">│</span>  <span class="t-green">●</span> <span class="t-white">VulnScan Framework</span>       <span class="t-dim">Automated pentesting + ML vuln prediction</span>', d: 150 },
-  { t: '<span class="t-gold">│</span>  <span class="t-green">●</span> <span class="t-white">SiteQ8 CyberToolkit</span>      <span class="t-dim">17-file modular bash toolkit, 11 modules</span>', d: 150 },
-  { t: '<span class="t-gold">│</span>  <span class="t-green">●</span> <span class="t-white">AlEnezi Tool (SITE)</span>      <span class="t-dim">CTF toolkit — recon, scanning, exploitation</span>', d: 150 },
-  { t: '<span class="t-gold">│</span>  <span class="t-green">●</span> <span class="t-white">PhishWatch</span>               <span class="t-dim">Real-time phishing via CertStream + OpenSquat</span>', d: 150 },
-  { t: '<span class="t-gold">│</span>', d: 50 },
-  { t: '<span class="t-gold">└──────────────────────────────────────────────────────────┘</span>', d: 200 },
-  { t: '', d: 200 },
+  const loadCmd = [
+    { t: '', d: 300 },
+    { t: '<span class="t-bright">root@alenezi</span><span class="t-dim">:</span><span class="t-blue">~</span><span class="t-dim">$</span> <span class="t-white">arsenal --load-modules</span>', d: 600 },
+    { t: '', d: 200 },
+    { t: '<span class="t-dim">[*]</span> Scanning <span class="t-blue">github.com/SiteQ8</span> ... <span class="t-bright">88 repos</span>', d: 500 },
+    { t: '<span class="t-dim">[*]</span> Classifying by domain .... <span class="t-green">done</span>', d: 400 },
+    { t: '', d: 250 },
+  ];
 
-  // ─── COMPLIANCE ───
-  { t: '<span class="t-gold">┌─── COMPLIANCE & GOVERNANCE ───────────────────────────────┐</span>', d: 300 },
-  { t: '<span class="t-gold">│</span>', d: 50 },
-  { t: '<span class="t-gold">│</span>  <span class="t-green">●</span> <span class="t-white">CBK CORF Compliance</span>      <span class="t-dim">Kuwait Central Bank framework — 876 controls</span>', d: 150 },
-  { t: '<span class="t-gold">│</span>  <span class="t-green">●</span> <span class="t-white">CIS Audit Tool</span>           <span class="t-dim">CIS Controls v8.1 audit + progress tracker</span>', d: 150 },
-  { t: '<span class="t-gold">│</span>  <span class="t-green">●</span> <span class="t-white">CIS Controls Platform</span>    <span class="t-dim">Interactive learning for all 18 CIS controls</span>', d: 150 },
-  { t: '<span class="t-gold">│</span>  <span class="t-green">●</span> <span class="t-white">CIS Benchmark Checker</span>    <span class="t-dim">Automated benchmark compliance checks</span>', d: 150 },
-  { t: '<span class="t-gold">│</span>  <span class="t-green">●</span> <span class="t-white">Arabic InfoSec Policies</span>  <span class="t-dim">Arabic security policy templates (2025)</span>', d: 150 },
-  { t: '<span class="t-gold">│</span>', d: 50 },
-  { t: '<span class="t-gold">└──────────────────────────────────────────────────────────┘</span>', d: 200 },
-  { t: '', d: 200 },
+  // Tool sections — mobile uses compact format, desktop uses box-drawing
+  function section(title, tools) {
+    const lines = [];
+    if (isMobile) {
+      lines.push({ t: `<span class="t-gold">── ${title} ──</span>`, d: 200 });
+      tools.forEach(([name, desc]) => {
+        lines.push({ t: `<span class="t-green"> ●</span> <span class="t-white">${name}</span>`, d: 100 });
+        lines.push({ t: `<span class="t-dim">   ${desc}</span>`, d: 80 });
+      });
+      lines.push({ t: '', d: 150 });
+    } else {
+      const w = 58;
+      const hdr = `─── ${title} `;
+      const pad = '─'.repeat(Math.max(0, w - hdr.length - 1));
+      lines.push({ t: `<span class="t-gold">┌${hdr}${pad}┐</span>`, d: 300 });
+      lines.push({ t: '<span class="t-gold">│</span>', d: 50 });
+      tools.forEach(([name, desc]) => {
+        const n = name.padEnd(24);
+        lines.push({ t: `<span class="t-gold">│</span>  <span class="t-green">●</span> <span class="t-white">${n}</span> <span class="t-dim">${desc}</span>`, d: 150 });
+      });
+      lines.push({ t: '<span class="t-gold">│</span>', d: 50 });
+      lines.push({ t: `<span class="t-gold">└${'─'.repeat(w)}┘</span>`, d: 200 });
+      lines.push({ t: '', d: 200 });
+    }
+    return lines;
+  }
 
-  // ─── ICS ───
-  { t: '<span class="t-gold">┌─── ICS / IoT / OT SECURITY ───────────────────────────────┐</span>', d: 300 },
-  { t: '<span class="t-gold">│</span>', d: 50 },
-  { t: '<span class="t-gold">│</span>  <span class="t-green">●</span> <span class="t-white">ICS/IoT/OT Hardening</span>     <span class="t-dim">IEC 62443 · NIST 800-82 · NERC CIP · MITRE</span>', d: 150 },
-  { t: '<span class="t-gold">│</span>  <span class="t-green">●</span> <span class="t-white">Shodan IoT Discovery</span>     <span class="t-dim">IoT/CCTV exposure recon via Shodan API</span>', d: 150 },
-  { t: '<span class="t-gold">│</span>', d: 50 },
-  { t: '<span class="t-gold">└──────────────────────────────────────────────────────────┘</span>', d: 200 },
-  { t: '', d: 200 },
+  const offensive = section('OFFENSIVE SECURITY', [
+    ['VulnScan Framework', 'Automated pentesting + ML prediction'],
+    ['SiteQ8 CyberToolkit', '17-file bash toolkit, 11 modules'],
+    ['AlEnezi Tool (SITE)', 'CTF — recon, scan, exploit'],
+    ['PhishWatch', 'Real-time phishing detection'],
+  ]);
 
-  // ─── STRATEGY ───
-  { t: '<span class="t-gold">┌─── STRATEGY & ARCHITECTURE ───────────────────────────────┐</span>', d: 300 },
-  { t: '<span class="t-gold">│</span>', d: 50 },
-  { t: '<span class="t-gold">│</span>  <span class="t-green">●</span> <span class="t-white">CyberStrategy Workbench</span>  <span class="t-dim">90-day plans · SWOT · stakeholder · policies</span>', d: 150 },
-  { t: '<span class="t-gold">│</span>  <span class="t-green">●</span> <span class="t-white">Zero Trust Architecture</span>  <span class="t-dim">ZTA implementation for banking environments</span>', d: 150 },
-  { t: '<span class="t-gold">│</span>  <span class="t-green">●</span> <span class="t-white">CyberArsenal Catalog</span>    <span class="t-dim">60+ open-source tools across 12 categories</span>', d: 150 },
-  { t: '<span class="t-gold">│</span>', d: 50 },
-  { t: '<span class="t-gold">└──────────────────────────────────────────────────────────┘</span>', d: 200 },
-  { t: '', d: 200 },
+  const compliance = section('COMPLIANCE & GOVERNANCE', [
+    ['CBK CORF Compliance', 'Kuwait Central Bank — 876 controls'],
+    ['CIS Audit Tool', 'CIS Controls v8.1 audit tracker'],
+    ['CIS Controls Platform', 'Interactive 18 CIS controls'],
+    ['CIS Benchmark Checker', 'Automated compliance checks'],
+    ['Arabic InfoSec Policies', 'Arabic policy templates (2025)'],
+  ]);
 
-  // ─── RESEARCH ───
-  { t: '<span class="t-gold">┌─── RESEARCH & COMMUNITY ──────────────────────────────────┐</span>', d: 300 },
-  { t: '<span class="t-gold">│</span>', d: 50 },
-  { t: '<span class="t-gold">│</span>  <span class="t-green">●</span> <span class="t-white">KWT Cyber Landscape</span>      <span class="t-dim">Kuwait cybersec professionals & cert analysis</span>', d: 150 },
-  { t: '<span class="t-gold">│</span>  <span class="t-green">●</span> <span class="t-white">KWTCyberWatch</span>            <span class="t-dim">National threat monitoring & intelligence</span>', d: 150 },
-  { t: '<span class="t-gold">│</span>', d: 50 },
-  { t: '<span class="t-gold">└──────────────────────────────────────────────────────────┘</span>', d: 200 },
-  { t: '', d: 400 },
+  const ics = section('ICS / IoT / OT SECURITY', [
+    ['ICS/IoT/OT Hardening', 'IEC 62443 · NIST 800-82 · MITRE'],
+    ['Shodan IoT Discovery', 'IoT/CCTV exposure recon'],
+  ]);
 
-  // System summary
-  { t: '<span class="t-dim">[*]</span> All modules verified and loaded.', d: 300 },
-  { t: '', d: 200 },
-  { t: '<span class="t-dim">    STACK</span>   <span class="t-cyan">Python</span> · <span class="t-cyan">Bash</span> · <span class="t-cyan">KQL</span> · <span class="t-cyan">PowerShell</span> · <span class="t-cyan">React</span> · <span class="t-cyan">Terraform</span>', d: 200 },
-  { t: '<span class="t-dim">    CLOUD</span>   <span class="t-cyan">Azure</span> · <span class="t-cyan">AWS</span> · <span class="t-cyan">GCP</span> · <span class="t-cyan">Docker</span> · <span class="t-cyan">Kubernetes</span>', d: 200 },
-  { t: '<span class="t-dim">    CERTS</span>   <span class="t-cyan">GPEN</span> · <span class="t-cyan">GWEB</span> · <span class="t-cyan">GCCC</span> · <span class="t-cyan">GICSP</span> · <span class="t-cyan">GDSA</span> · <span class="t-cyan">GISP</span> · <span class="t-cyan">ISO27001</span> · <span class="t-cyan">MCT</span>', d: 200 },
-  { t: '', d: 400 },
+  const strategy = section('STRATEGY & ARCHITECTURE', [
+    ['CyberStrategy Workbench', '90-day plans · SWOT · policies'],
+    ['Zero Trust Architecture', 'ZTA for banking environments'],
+    ['CyberArsenal Catalog', '60+ tools across 12 categories'],
+  ]);
 
-  // Launch
-  { t: '<span class="t-bright">root@alenezi</span><span class="t-dim">:</span><span class="t-blue">~</span><span class="t-dim">$</span> <span class="t-white">launch --secure-interface</span>', d: 700 },
-  { t: '', d: 300 },
-  { t: '<span class="t-bright">▸ ENTERING SECURE INTERFACE...</span><span class="cursor"></span>', d: 1500, last: true },
-];
+  const research = section('RESEARCH & COMMUNITY', [
+    ['KWT Cyber Landscape', 'Kuwait cybersec professionals'],
+    ['KWTCyberWatch', 'National threat monitoring'],
+  ]);
+
+  const summary = [
+    { t: '<span class="t-dim">[*]</span> All modules loaded. Status: <span class="t-green" style="font-weight:700">OPERATIONAL</span>', d: 350 },
+    { t: '', d: 200 },
+    { t: '<span class="t-dim">  STACK</span> <span class="t-cyan">Python · Bash · KQL · PowerShell · React</span>', d: 200 },
+    { t: '<span class="t-dim">  CLOUD</span> <span class="t-cyan">Azure · AWS · GCP · Docker · K8s</span>', d: 200 },
+    { t: '<span class="t-dim">  CERTS</span> <span class="t-cyan">GPEN · GWEB · GCCC · GICSP · GDSA · GISP</span>', d: 200 },
+    { t: '', d: 400 },
+    { t: '<span class="t-bright">root@alenezi</span><span class="t-dim">:</span><span class="t-blue">~</span><span class="t-dim">$</span> <span class="t-white">launch --secure-interface</span>', d: 700 },
+    { t: '', d: 300 },
+    { t: '<span class="t-bright">▸ ENTERING SECURE INTERFACE...</span><span class="cursor"></span>', d: 1500, last: true },
+  ];
+
+  return [
+    ...base, ...ascii, ...banner, ...loadCmd,
+    ...offensive, ...compliance, ...ics, ...strategy, ...research,
+    ...summary
+  ];
+}
+
+const L = buildLines();
 
 function addLine(html) {
   const el = document.createElement('div');
@@ -467,6 +546,7 @@ function run(i) {
 function go() {
   skipped = true;
   document.getElementById('skip-btn').classList.add('hidden');
+  document.querySelector('.tap-hint').style.display = 'none';
   document.getElementById('terminal-screen').classList.add('fade-out');
   setTimeout(() => {
     document.getElementById('terminal-screen').style.display = 'none';
@@ -476,29 +556,39 @@ function go() {
 
 function skipTerminal() { if (!skipped) go(); }
 
-// Start after brief blackout
 setTimeout(() => run(0), 800);
+
+// Tap anywhere on mobile to skip
+document.getElementById('terminal-screen').addEventListener('touchend', (e) => {
+  if (e.target.closest('.skip-btn')) return;
+  if (!skipped) skipTerminal();
+});
 
 // Particles
 const pc = document.getElementById('particles');
-for (let i=0;i<30;i++) {
+const particleCount = isMobile ? 15 : 30;
+for (let i = 0; i < particleCount; i++) {
   const p = document.createElement('div');
-  p.className='particle';
-  p.style.left=Math.random()*100+'%';
-  p.style.animationDuration=(8+Math.random()*14)+'s';
-  p.style.animationDelay=(Math.random()*10)+'s';
-  p.style.width=p.style.height=(1+Math.random()*2)+'px';
+  p.className = 'particle';
+  p.style.left = Math.random() * 100 + '%';
+  p.style.animationDuration = (8 + Math.random() * 14) + 's';
+  p.style.animationDelay = (Math.random() * 10) + 's';
+  p.style.width = p.style.height = (1 + Math.random() * 2) + 'px';
   pc.appendChild(p);
 }
 
-document.addEventListener('mousemove',e=>{
-  const x=(e.clientX/innerWidth-0.5)*10, y=(e.clientY/innerHeight-0.5)*10;
-  document.querySelector('.orb-1').style.transform=`translate(${-x}px,${-y}px)`;
-  document.querySelector('.orb-2').style.transform=`translate(${x}px,${y}px)`;
-});
+// Mouse parallax (desktop only)
+if (!isMobile) {
+  document.addEventListener('mousemove', e => {
+    const x = (e.clientX / innerWidth - 0.5) * 10;
+    const y = (e.clientY / innerHeight - 0.5) * 10;
+    document.querySelector('.orb-1').style.transform = `translate(${-x}px,${-y}px)`;
+    document.querySelector('.orb-2').style.transform = `translate(${x}px,${y}px)`;
+  });
+}
 
-document.addEventListener('keydown',e=>{
-  if((e.key==='Enter'||e.key==='Escape'||e.key===' ')&&!skipped) skipTerminal();
+document.addEventListener('keydown', e => {
+  if ((e.key === 'Enter' || e.key === 'Escape' || e.key === ' ') && !skipped) skipTerminal();
 });
 </script>
 </body>
