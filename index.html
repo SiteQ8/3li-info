@@ -649,11 +649,12 @@ function addLine(html) {
   });
 }
 
+const SPEED = 1.8; // Higher = slower boot sequence
 function run(i) {
   if (skipped || i >= L.length) return;
   addLine(L[i].t);
-  if (L[i].last) { setTimeout(() => { if (!skipped) go(); }, L[i].d); return; }
-  setTimeout(() => run(i+1), L[i].d);
+  if (L[i].last) { setTimeout(() => { if (!skipped) go(); }, L[i].d * SPEED); return; }
+  setTimeout(() => run(i+1), L[i].d * SPEED);
 }
 
 function go() {
