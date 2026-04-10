@@ -383,19 +383,132 @@ const term = document.getElementById('term');
 let skipped = false;
 const isMobile = window.innerWidth <= 600;
 
+// ── Visitor geo + environment detection ──
+// Used to personalize the boot sequence with today's date, country flag, and local intel
+let VISITOR = {
+  flag: '🌐',
+  country: 'the Internet',
+  city: null,
+  region: null,
+  ip: null,
+  isp: null,
+  timezone: null,
+  localTime: null
+};
+
+function countryCodeToFlag(cc) {
+  if (!cc || cc.length !== 2) return '🌐';
+  // Convert 2-letter country code to flag emoji via regional indicator symbols
+  return String.fromCodePoint(...cc.toUpperCase().split('').map(c => 127397 + c.charCodeAt(0)));
+}
+
+function formatDateShort(d) {
+  // Matches the original "Sat Mar 07 2026" format
+  const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return days[d.getDay()] + ' ' + months[d.getMonth()] + ' ' + String(d.getDate()).padStart(2,'0') + ' ' + d.getFullYear();
+}
+
+async function fetchVisitorGeo() {
+  // Try ipapi.co first — reliable, CORS-enabled, no API key required
+  try {
+    const r = await fetch('https://ipapi.co/json/', { cache: 'no-store' });
+    if (r.ok) {
+      const j = await r.json();
+      if (j && j.country_code) {
+        VISITOR.flag = countryCodeToFlag(j.country_code);
+        VISITOR.country = j.country_name || j.country_code;
+        VISITOR.city = j.city || null;
+        VISITOR.region = j.region || null;
+        VISITOR.ip = j.ip || null;
+        VISITOR.isp = j.org || null;
+        VISITOR.timezone = j.timezone || null;
+        return;
+      }
+    }
+  } catch (e) {}
+  // Fallback — ipwho.is is another free no-key provider
+  try {
+    const r = await fetch('https://ipwho.is/', { cache: 'no-store' });
+    if (r.ok) {
+      const j = await r.json();
+      if (j && j.success !== false && j.country_code) {
+        VISITOR.flag = countryCodeToFlag(j.country_code);
+        VISITOR.country = j.country || j.country_code;
+        VISITOR.city = j.city || null;
+        VISITOR.region = j.region || null;
+        VISITOR.ip = j.ip || null;
+        VISITOR.isp = (j.connection && j.connection.isp) || null;
+        VISITOR.timezone = (j.timezone && j.timezone.id) || null;
+        return;
+      }
+    }
+  } catch (e) {}
+  // Final fallback — browser timezone can still tell us something
+  try {
+    VISITOR.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  } catch (e) {}
+}
+
+function detectClientOS() {
+  const ua = navigator.userAgent;
+  if (/Windows NT 10/.test(ua)) return 'Windows 10/11';
+  if (/Windows NT/.test(ua)) return 'Windows';
+  if (/Mac OS X/.test(ua)) return 'macOS';
+  if (/Android/.test(ua)) return 'Android';
+  if (/iPhone|iPad|iPod/.test(ua)) return 'iOS';
+  if (/Linux/.test(ua)) return 'Linux';
+  return 'Unknown';
+}
+
+function detectBrowser() {
+  const ua = navigator.userAgent;
+  if (/Edg\//.test(ua)) return 'Edge';
+  if (/Chrome\//.test(ua) && !/Edg/.test(ua)) return 'Chrome';
+  if (/Firefox\//.test(ua)) return 'Firefox';
+  if (/Safari\//.test(ua) && !/Chrome/.test(ua)) return 'Safari';
+  return 'Browser';
+}
+
+function bumpVisitCount() {
+  try {
+    const n = parseInt(localStorage.getItem('alenezi_visits') || '0', 10) + 1;
+    localStorage.setItem('alenezi_visits', String(n));
+    return n;
+  } catch (e) { return 1; }
+}
+
 // ── Build terminal lines based on screen size ──
 function buildLines() {
+  const now = new Date();
+  const todayStr = formatDateShort(now);
+  const localTimeStr = now.toLocaleTimeString('en-US', { hour12: false });
+  const clientOS = detectClientOS();
+  const browser = detectBrowser();
+  const visits = bumpVisitCount();
+  const locLine = VISITOR.city
+    ? VISITOR.flag + ' ' + VISITOR.city + ', ' + VISITOR.country
+    : VISITOR.flag + ' ' + VISITOR.country;
+  const greetingLine = '<span class="t-green">Access granted.</span> Welcome back, <span class="t-bright">Ali AlEnezi</span>.';
+  const visitorGreeting = visits === 1
+    ? '<span class="t-gold">>> First-time visitor detected. Welcome to the arsenal, friend from ' + locLine + '.</span>'
+    : '<span class="t-gold">>> Visitor #' + visits + ' from ' + locLine + ' — good to see you again.</span>';
+
   const base = [
     { t: '<span class="t-dim">ALENEZI SECURITY BIOS v3.1.4 — System Initializing...</span>', d: 500 },
+    { t: '<span class="t-dim">Boot time: ' + todayStr + ' ' + localTimeStr + '</span>', d: 250 },
     { t: '<span class="t-dim">Memory Check: 8192 MB OK</span>', d: 300 },
     { t: '<span class="t-dim">Crypto Engine: AES-256-GCM ... </span><span class="t-green">READY</span>', d: 300 },
     { t: '<span class="t-dim">Firewall Module: ............ </span><span class="t-green">ACTIVE</span>', d: 200 },
     { t: '<span class="t-dim">Threat Intel Feed: .......... </span><span class="t-green">CONNECTED</span>', d: 200 },
+    { t: '<span class="t-dim">Geo-locator: ................ </span><span class="t-green">' + locLine + '</span>', d: 250 },
+    { t: '<span class="t-dim">Client Fingerprint: ......... </span><span class="t-green">' + clientOS + ' / ' + browser + '</span>', d: 200 },
     { t: '', d: 400 },
     { t: '<span class="t-green">login:</span> <span class="t-white">root</span>', d: 500 },
     { t: '<span class="t-green">password:</span> <span class="t-dim">**************</span>', d: 400 },
-    { t: '<span class="t-green">Access granted.</span> Welcome back, <span class="t-bright">Ali AlEnezi</span>.', d: 600 },
-    { t: '<span class="t-dim">Last login: Sat Mar 07 2026 from 🇰🇼 Kuwait</span>', d: 300 },
+    { t: greetingLine, d: 500 },
+    { t: '<span class="t-dim">Current session: ' + todayStr + ' from ' + locLine + '</span>', d: 300 },
+    { t: visitorGreeting, d: 600 },
     { t: '', d: 300 },
     { t: '<span class="t-bright">root@alenezi</span><span class="t-dim">:</span><span class="t-blue">~</span><span class="t-dim">$</span> <span class="t-white">cat /etc/arsenal.conf</span>', d: 600 },
     { t: '', d: 200 },
@@ -523,7 +636,7 @@ function buildLines() {
   ];
 }
 
-const L = buildLines();
+let L = [];
 
 function addLine(html) {
   const el = document.createElement('div');
@@ -556,7 +669,18 @@ function go() {
 
 function skipTerminal() { if (!skipped) go(); }
 
-setTimeout(() => run(0), 800);
+// Fetch visitor geo (IP → country) then build & run the boot sequence
+// Race the fetch against a 1500ms timeout so slow networks don't delay the intro
+(async () => {
+  try {
+    await Promise.race([
+      fetchVisitorGeo(),
+      new Promise(resolve => setTimeout(resolve, 1500))
+    ]);
+  } catch (e) {}
+  L = buildLines();
+  setTimeout(() => run(0), 200);
+})();
 
 // Tap anywhere on mobile to skip
 document.getElementById('terminal-screen').addEventListener('touchend', (e) => {
