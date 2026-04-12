@@ -542,10 +542,14 @@ function buildLines() {
   const ascii = isMobile ? asciiMobile : asciiDesktop;
 
   const banner = isMobile ? [
+    ] : [
     { t: '', d: 100 },
-    { t: '<span class="t-gold">  CYBER ARSENAL v2.0</span>', d: 100 },
-    { t: '<span class="t-dim">  Securing the world,</span>', d: 60 },
-    { t: '<span class="t-dim">  one commit at a time</span>', d: 300 },
+    { t: '<span class="t-dim">         ╔═══════════════════════════════════════════╗</span>', d: 60 },
+    { t: '<span class="t-dim">         ║</span>   <span class="t-gold">C Y B E R   A R S E N A L   v 2 . 0</span>   <span class="t-dim">║</span>', d: 60 },
+    { t: '<span class="t-dim">         ║</span>   <span class="t-gold">C Y B E R   A R S E N A L  </span>   <span class="t-dim">║</span>', d: 60 },
+    { t: '<span class="t-dim">         ║</span>   <span class="t-dim">Securing the world, one commit at a time</span><span class="t-dim">║</span>', d: 60 },
+    { t: '<span class="t-dim">         ╚═══════════════════════════════════════════╝</span>', d: 300 },
+  ];
   ] : [
     { t: '', d: 100 },
     { t: '<span class="t-dim">         ╔═══════════════════════════════════════════╗</span>', d: 60 },
